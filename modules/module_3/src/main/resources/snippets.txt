@@ -1,0 +1,86 @@
+//UserRoutes
+
+val createResult = create(user)
+          respondWith(createResult)
+
+------
+ ~
+    path(JavaUUID) {id =>
+      get {
+
+        val readResult = read[User](id)
+        respondWith(readResult)
+      }
+    }
+
+
+//package.scala
+---------------
+import ZIPCodeLocator._
+  import com.globomantics.util.PasswordHasher._
+
+  implicit class UserOps(user: User){
+
+    def ensureAddressDetails: Future[User] = {
+      import monocle.macros.syntax.lens._
+
+      val location = user.address.location
+
+      (location.city, location.country) match {
+        case (None, None) => {
+          locateZIPCode(location.pin)
+            .map {
+              case fetchedLocation => user.lens(_.address.location).set(fetchedLocation)
+            }
+        }
+        case _ => Future.successful(user)
+      }
+
+    }
+
+    def ensureAddressDetailsWithoutLens: Future[User] = {
+
+      val location = user.address.location
+
+      (location.city, location.country) match {
+        case (None, None) => {
+          locateZIPCode(location.pin)
+            .map {
+              case fetchedLocation =>
+                user
+                  .copy(
+                    address =
+                      user.address.copy(
+                        location =
+                          location.copy (
+                            city = fetchedLocation.city,
+                            country = fetchedLocation.country
+                          )
+                      )
+                  )
+            }
+        }
+        case _ => Future.successful(user)
+      }
+
+    }
+
+    def ensurePasswordEncrypted: Future[User] = {
+
+      memoizedBcrypt(user.password)
+        .map {
+          case encrypted =>
+            user.copy(password = encrypted)
+        }
+
+    }
+  }
+
+//UserServiceComponent
+val result: Future[User] = for {
+        userWithEnsuredAddress <- user.ensureAddressDetails
+        userWithEncryptedPwd  <- userWithEnsuredAddress.ensurePasswordEncrypted
+        userInserted <- userDao.insert(userWithEncryptedPwd)
+      } yield {
+        userInserted
+      }

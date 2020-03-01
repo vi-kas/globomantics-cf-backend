@@ -1,0 +1,128 @@
+package com.globomantics
+
+object LazyLearning extends App {
+
+  def expensiveOp: Int = {
+
+    println(s"Assuming an expensive operation result in 15.")
+    15
+  }
+
+  val anotherExpensiveOp: Int = {
+
+    println(s"Assuming another expensive operation result in 20.")
+    20
+  }
+
+  lazy val yetAnotherExpensiveOp: Int = {
+
+    println(s"Assuming a lazily evaluated expensive operation results in 20.")
+    20
+  }
+
+  def expensiveOpDef: Int = {
+
+    println(s"Assuming an expensive operation result in 15.")
+    15
+  }
+
+  def anotherExpensiveOpDef: Int = {
+
+    println(s"Assuming an expensive operation result in 15.")
+    15
+  }
+
+  def timed[T](code: T) = {
+    val start = System.nanoTime()
+    val result = code
+    val end = System.nanoTime()
+    (result, (end - start)/100000)
+  }
+
+  def timed2[T](code: => T) = {
+    val start = System.nanoTime()
+    val result = code
+    val end = System.nanoTime()
+    (result, (end - start)/100000)
+  }
+
+  val timedCallByValue = timed {
+    Thread.sleep(2000)
+    15
+  }
+
+  val timedCallByName = timed2 {
+    Thread.sleep(2000)
+    15
+  }
+
+  printf(s"timedCallByValue: $timedCallByValue")
+  printf(s"timedCallByName: $timedCallByName")
+
+}
+
+
+----------
+
+import ZIPCodeLocator._
+  import com.globomantics.util.PasswordHasher._
+
+  implicit class UserOps(user: User){
+
+    def ensureAddressDetails: Future[User] = {
+      import monocle.macros.syntax.lens._
+
+      val location = user.address.location
+
+      (location.city, location.country) match {
+        case (None, None) => {
+          locateZIPCode(location.pin)
+            .map {
+              case fetchedLocation => user.lens(_.address.location).set(fetchedLocation)
+            }
+        }
+        case _ => Future.successful(user)
+      }
+
+    }
+
+    def ensureAddressDetailsWithoutLens: Future[User] = {
+
+      val location = user.address.location
+
+      (location.city, location.country) match {
+        case (None, None) => {
+          locateZIPCode(location.pin)
+            .map {
+              case fetchedLocation =>
+                user
+                  .copy(
+                    address =
+                      user.address.copy(
+                        location =
+                          location.copy (
+                            city = fetchedLocation.city,
+                            country = fetchedLocation.country
+                          )
+                      )
+                  )
+            }
+        }
+        case _ => Future.successful(user)
+      }
+
+    }
+
+    def ensurePasswordEncrypted: Future[User] = {
+
+      memoizedBcrypt(user.password)
+        .map {
+          case encrypted =>
+            user.copy(password = encrypted)
+        }
+
+    }
+  }
+
+---------------------
+

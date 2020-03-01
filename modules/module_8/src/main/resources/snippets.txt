@@ -1,0 +1,54 @@
+package com.globomantics
+
+object MemoizedLearning extends App {
+
+  def memo[X, Y](f: X => Y): X => Y = {
+
+    val cache = scala.collection.mutable.Map[X,Y]()
+    (x: X) => cache.getOrElseUpdate(x, f(x))
+  }
+
+  import com.github.t3hnar.bcrypt._
+
+  val simpleBcrypt: String => String = pwd => pwd.bcrypt
+
+  val memoizedBcrypt: String => String = memo(pwd => pwd.bcrypt)
+
+  def timed[T](code: => T) = {
+    val start = System.nanoTime()
+    val result = code
+    val end = System.nanoTime()
+    (result, (end - start)/100000)
+  }
+
+  val bcryptTime1 = timed {
+    simpleBcrypt("foo")
+  }
+
+  val bcryptTime2 = timed {
+    simpleBcrypt("foo")
+  }
+//
+  val time1 = timed {
+    memoizedBcrypt("foo")
+  }
+
+  val time2 = timed {
+    memoizedBcrypt("foo")
+  }
+
+//  val time3 = timed2 {
+//    memoizedBcrypt("foo")
+//  }
+//
+//  val time4 = timed2 {
+//    memoizedBcrypt("baz")
+//  }
+
+  println(bcryptTime1)
+  println(bcryptTime2)
+  println(time1)
+  println(time2)
+//  println(time3)
+//  println(time4)
+}

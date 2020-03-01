@@ -1,0 +1,35 @@
+FROM
+  self: UserServiceComponent =>
+
+  val routes = ???
+//Removed Above! and injected implicit UserServiceClient
+
+To
+//self: UserServiceComponent =>
+
+  def routes(implicit userServiceClient: ServiceClient[User]) = {
+
+
+From
+//
+//object userRoutes
+//  extends UserRoutes
+//    with UserServiceComponent
+//    with UserDaoComponent
+//    with PostgresService {
+//
+//  override val serviceClient: ServiceClient[User] = new UserServiceClient
+//  override val userDao: UserDao = new UserDao
+//
+//  scala.util.Try(userDao.initSchema())
+//}
+//
+//trait PostgresService extends DatabaseService {
+//
+//  val dbConfig: String = "conferencedb"
+//  val driver = slick.jdbc.PostgresProfile
+//}
+//
+//val serviceRoutes = userRoutes.routes
+
+To
